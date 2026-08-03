@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MBS启动会签到看板</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -536,29 +535,9 @@
         
         function loadQRCode() {
             const checkinUrl = 'https://lirong78.github.io/checkin-board/checkin.html';
-            
-            // 清空容器
-            document.getElementById('qrCode').innerHTML = '';
-            document.getElementById('qrCode2').innerHTML = '';
-            
-            // 使用 QRCode 库生成
-            new QRCode(document.getElementById('qrCode'), {
-                text: checkinUrl,
-                width: 130,
-                height: 130,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            new QRCode(document.getElementById('qrCode2'), {
-                text: checkinUrl,
-                width: 130,
-                height: 130,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
+            const qrSrc = `https://cli.im/api/qrcode/code?text=${encodeURIComponent(checkinUrl)}&mhid=1`;
+            document.getElementById('qrCode').innerHTML = `<img src="${qrSrc}" style="width:130px;height:130px;" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(checkinUrl)}'">`;
+            document.getElementById('qrCode2').innerHTML = `<img src="${qrSrc}" style="width:130px;height:130px;" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(checkinUrl)}'">`;
         }
         
         async function loadData() {
