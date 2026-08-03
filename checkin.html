@@ -1,0 +1,380 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MBS启动会签到</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            color: #333;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .search-box input:focus {
+            border-color: #667eea;
+        }
+        
+        .staff-list {
+            max-height: 60vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .staff-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .staff-item:hover {
+            background: #e8e8e8;
+        }
+        
+        .staff-item.selected {
+            background: #667eea;
+            color: white;
+            border-color: #764ba2;
+        }
+        
+        .staff-item.checked {
+            background: #4ade80;
+            color: white;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .staff-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .staff-info {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .success-message {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .success-message .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        
+        .success-message h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: #4ade80;
+        }
+        
+        .success-message p {
+            font-size: 18px;
+            opacity: 0.8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .already-checked {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .already-checked .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        
+        .already-checked h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #f59e0b;
+        }
+        
+        .already-checked p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MBS启动会签到</h1>
+            <p>请选择您的姓名完成签到</p>
+        </div>
+        
+        <div class="card" id="mainCard">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+    
+    <script>
+        // Supabase 配置
+        const SUPABASE_URL = 'https://jtcoqlpxdubcmdpawyiu.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_g9LTQJUkOYi2F0AU8wmPbw_Gb-kxdI_';
+        
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let allStaff = [];
+        let checkinRecords = [];
+        let selectedStaff = null;
+        let deviceId = '';
+        
+        // 生成设备 ID
+        function getDeviceId() {
+            let id = localStorage.getItem('checkin_device_id');
+            if (!id) {
+                id = 'device-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('checkin_device_id', id);
+            }
+            return id;
+        }
+        
+        // 初始化
+        async function init() {
+            deviceId = getDeviceId();
+            await loadData();
+            checkIfAlreadyChecked();
+        }
+        
+        // 加载数据
+        async function loadData() {
+            try {
+                const { data: staffData, error: staffError } = await supabase
+                    .from('checkin_staff')
+                    .select('*')
+                    .order('department')
+                    .order('name');
+                
+                if (staffError) throw staffError;
+                allStaff = staffData;
+                
+                const { data: recordsData, error: recordsError } = await supabase
+                    .from('checkin_records')
+                    .select('*');
+                
+                if (recordsError) throw recordsError;
+                checkinRecords = recordsData || [];
+                
+                renderStaffList();
+            } catch (error) {
+                console.error('加载失败:', error);
+                document.getElementById('mainCard').innerHTML = 
+                    '<div class="error-message">加载失败，请刷新重试</div>';
+            }
+        }
+        
+        // 检查是否已签到
+        function checkIfAlreadyChecked() {
+            const checkedDeviceId = localStorage.getItem('checkin_completed');
+            if (checkedDeviceId) {
+                showAlreadyChecked();
+            }
+        }
+        
+        // 显示已签到提示
+        function showAlreadyChecked() {
+            document.getElementById('mainCard').innerHTML = `
+                <div class="already-checked">
+                    <div class="icon">✅</div>
+                    <h2>您已完成签到</h2>
+                    <p>每个设备只能签到一次</p>
+                </div>
+            `;
+        }
+        
+        // 渲染人员列表
+        function renderStaffList(filter = '') {
+            const filteredStaff = allStaff.filter(s => 
+                s.name.includes(filter) || 
+                s.department.includes(filter) ||
+                s.position.includes(filter)
+            );
+            
+            let html = `
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索姓名/部门/职位" value="${filter}" oninput="handleSearch(this.value)">
+                </div>
+                <div class="staff-list">
+                    ${filteredStaff.map(staff => {
+                        const isChecked = checkinRecords.some(r => r.staff_id === staff.id);
+                        const isSelected = selectedStaff && selectedStaff.id === staff.id;
+                        
+                        return `
+                            <div class="staff-item ${isChecked ? 'checked' : ''} ${isSelected ? 'selected' : ''}" 
+                                 onclick="${isChecked ? '' : `selectStaff('${staff.id}')`}">
+                                <div class="staff-name">${staff.name}</div>
+                                <div class="staff-info">${staff.department} - ${staff.position}</div>
+                                ${isChecked ? '<div class="staff-info">已签到</div>' : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <button class="submit-btn" id="submitBtn" onclick="submitCheckin()" ${!selectedStaff ? 'disabled' : ''}>
+                    确认签到
+                </button>
+            `;
+            
+            document.getElementById('mainCard').innerHTML = html;
+        }
+        
+        // 搜索处理
+        function handleSearch(value) {
+            renderStaffList(value);
+        }
+        
+        // 选择人员
+        function selectStaff(staffId) {
+            selectedStaff = allStaff.find(s => s.id === staffId);
+            renderStaffList(document.getElementById('searchInput')?.value || '');
+        }
+        
+        // 提交签到
+        async function submitCheckin() {
+            if (!selectedStaff) {
+                alert('请先选择您的姓名');
+                return;
+            }
+            
+            // 检查是否已签到
+            if (checkinRecords.some(r => r.staff_id === selectedStaff.id)) {
+                alert('该人员已签到');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase
+                    .from('checkin_records')
+                    .insert([{
+                        staff_id: selectedStaff.id,
+                        device_id: deviceId
+                    }]);
+                
+                if (error) throw error;
+                
+                // 标记该设备已签到
+                localStorage.setItem('checkin_completed', deviceId);
+                
+                showSuccess();
+            } catch (error) {
+                console.error('签到失败:', error);
+                alert('签到失败，请重试');
+            }
+        }
+        
+        // 显示成功
+        function showSuccess() {
+            document.getElementById('mainCard').innerHTML = `
+                <div class="success-message">
+                    <div class="icon">🎉</div>
+                    <h2>签到成功！</h2>
+                    <p>${selectedStaff.name} - ${selectedStaff.department}</p>
+                    <p style="margin-top: 20px; font-size: 14px;">${new Date().toLocaleString('zh-CN')}</p>
+                </div>
+            `;
+        }
+        
+        // 启动
+        init();
+    </script>
+</body>
+</html>
+
