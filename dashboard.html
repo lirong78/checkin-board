@@ -577,19 +577,19 @@
             });
             
             let html = '<table class="checkin-table"><thead><tr>';
-            html += '<th>分厂/部门</th>';
-            posOrder.forEach(pos => {
-                const posStaff = allStaff.filter(s => s.position === pos);
-                const checkedCount = posStaff.filter(s => checkinRecords.some(r => r.staff_id === s.id)).length;
-                html += `<th>${pos}<div class="dept-total">${checkedCount}/${posStaff.length}</div></th>`;
+            html += '<th>职位</th>';
+            deptOrder.forEach(dept => {
+                const deptStaff = allStaff.filter(s => s.department === dept);
+                const checkedCount = deptStaff.filter(s => checkinRecords.some(r => r.staff_id === s.id)).length;
+                html += `<th>${dept}<div class="dept-total">${checkedCount}/${deptStaff.length}</div></th>`;
             });
             html += '</tr></thead><tbody>';
             
-            deptOrder.forEach(dept => {
-                const deptStaff = allStaff.filter(s => s.department === dept);
-                const deptChecked = deptStaff.filter(s => checkinRecords.some(r => r.staff_id === s.id)).length;
-                html += `<tr><th>${dept}<div class="dept-total">${deptChecked}/${deptStaff.length}</div></th>`;
-                posOrder.forEach(position => {
+            posOrder.forEach(position => {
+                const posStaff = allStaff.filter(s => s.position === position);
+                const posChecked = posStaff.filter(s => checkinRecords.some(r => r.staff_id === s.id)).length;
+                html += `<tr><th>${position}<div class="dept-total">${posChecked}/${posStaff.length}</div></th>`;
+                deptOrder.forEach(dept => {
                     const key = `${dept}|${position}`;
                     const staffs = staffMap[key] || [];
                     
