@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MBS启动会签到看板</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -519,7 +520,7 @@
         async function init() {
             updateClock();
             setInterval(updateClock, 1000);
-            await loadQRCode();
+            loadQRCode();
             await loadData();
             setInterval(loadData, 5000);
         }
@@ -533,11 +534,31 @@
             document.getElementById('currentTime').textContent = timeStr;
         }
         
-        async function loadQRCode() {
-            const checkinUrl = window.location.origin + window.location.pathname.replace('dashboard.html', 'checkin.html');
-            const qrHtml = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(checkinUrl)}" style="width:100%;height:100%;">`;
-            document.getElementById('qrCode').innerHTML = qrHtml;
-            document.getElementById('qrCode2').innerHTML = qrHtml;
+        function loadQRCode() {
+            const checkinUrl = 'https://lirong78.github.io/checkin-board/checkin.html';
+            
+            // 清空容器
+            document.getElementById('qrCode').innerHTML = '';
+            document.getElementById('qrCode2').innerHTML = '';
+            
+            // 使用 QRCode 库生成
+            new QRCode(document.getElementById('qrCode'), {
+                text: checkinUrl,
+                width: 130,
+                height: 130,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            new QRCode(document.getElementById('qrCode2'), {
+                text: checkinUrl,
+                width: 130,
+                height: 130,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
         }
         
         async function loadData() {
