@@ -238,7 +238,7 @@
         // 加载数据
         async function loadData() {
             try {
-                const { data: staffData, error: staffError } = await supabase
+                const { data: staffData, error: staffError } = await db
                     .from('checkin_staff')
                     .select('*')
                     .order('department')
@@ -247,7 +247,7 @@
                 if (staffError) throw staffError;
                 allStaff = staffData;
                 
-                const { data: recordsData, error: recordsError } = await supabase
+                const { data: recordsData, error: recordsError } = await db
                     .from('checkin_records')
                     .select('*');
                 
@@ -341,7 +341,7 @@
             }
             
             try {
-                const { error } = await supabase
+                const { error } = await db
                     .from('checkin_records')
                     .insert([{
                         staff_id: selectedStaff.id,
